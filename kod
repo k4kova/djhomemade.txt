@@ -1,0 +1,54 @@
+#include <BleKeyboard.h>
+
+#define CLK 32
+#define DT 33
+#define SW 25
+
+int lastClkState;
+bool buttonPressed = false;
+unsigned long lastDebounceTime = 0;
+unsigned long debounceDelay = 200;
+
+BleKeyboard bleKeyboard;
+
+void setup() {
+  pinMode(CLK, INPUT);
+  pinMode(DT, INPUT);
+  pinMode(SW, INPUT_PULLUP);
+
+  Serial.begin(115200);
+  bleKeyboard.begin();
+
+  lastClkState = digitalRead(CLK);
+}
+
+void loop() {
+  if (bleKeyboard.isConnected()) {
+    int clkState = digitalRead(CLK);
+    int dtState = digitalRead(DT);
+
+    if (clkState != lastClkState) {
+      if (dtState != clkState) {
+        bleKeyboard.write(KEY_MEDIA_VOLUME_UP);
+        Serial.println("Ses Aç");
+      } else {
+        bleKeyboard.write(KEY_MEDIA_VOLUME_DOWN);
+        Serial.println("Ses Kıs");
+      }
+    }
+    lastClkState = clkState;
+
+    if (digitalRead(SW) == LOW && !buttonPressed && millis() - lastDebounceTime > debounceDelay) {
+      bleKeyboard.write(KEY_MEDIA_MUTE);
+      Serial.println("Sessize Al / Aç");
+      buttonPressed = true;
+      lastDebounceTime = millis();
+    }
+
+    if (digitalRead(SW) == HIGH) {
+      buttonPressed = false;
+    }
+  }
+
+  delay(5);
+}
